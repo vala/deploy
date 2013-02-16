@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+$stdout.sync = true
+
+message = ARGV.first
+
+def echo str, options = {}
+  str = "| #{ str } |"
+  dashes = str.length.times.map { '-' }.join
+  hr = "\n#{ dashes }\n"
+  message = (hr + str + hr)
+  "echo \"#{ message }\"#{ ' && \\' unless options[:end] }"
+end
+
+deploy = <<-BASH
+  git add . && \
+  #{ echo "Committing : '#{ message }' ..." }
+  git commit -a -m "#{ message }" && \
+  #{ echo "Pushing to master ..."}
+  git push && \
+  #{ echo "Deploying to Heroku master ..." }
+  git push heroku master && \
+  #{ echo "Deployed !", end: true }
+BASH
+
+IO.popen(deploy) do |f|
+  puts f.gets until f.eof?
+end
+
