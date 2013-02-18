@@ -6,6 +6,13 @@ require 'optparse'
 $stdout.sync = true
 
 class Push
+  DEFAULT_OPTIONS = {
+    heroku: false,
+    migrate: false,
+    commit: true,
+    message: nil
+  }
+
   def echo str, options = {}
     str = "| #{ str } |"
     dashes = str.length.times.map { '-' }.join
@@ -24,6 +31,9 @@ class Push
         opts.on '-m', '--migrate', 'Migrates after deploy' do |msg|
           options[:migrate] = true
         end
+        opts.on '-c', '--no-commit', 'Don\'t try to commit, just push' do
+          options[:commit] = false
+        end
         opts.on '--help', "Shows this help message" do
           abort parser.help
         end
@@ -32,18 +42,25 @@ class Push
       parser.parse!
 
       options[:message] = ARGV.shift
-      abort parser.help unless options[:message]
+      abort parser.help if options[:commit] && !options[:message]
 
       # Return options
       options
-    }.call({})
+    }.call(DEFAULT_OPTIONS)
   end
 
   def message
-    push = <<-COMMAND
-      git add . && \
-      #{ echo "Committing : '#{ options[:message] }' ..." }
-      git commit -a -m "#{ options[:message] }" && \
+    push = ""
+
+    if options[:commit]
+      push += <<-COMMAND
+        git add . && \
+        #{ echo "Committing : '#{ options[:message] }' ..." }
+        git commit -a -m "#{ options[:message] }" &&
+      COMMAND
+    end
+
+    push += <<-COMMAND
       #{ echo "Pushing to master ..."}
       git push origin master &&
     COMMAND

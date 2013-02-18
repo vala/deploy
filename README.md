@@ -24,6 +24,7 @@ deploy -h -m "Commit message" # => Run migrations too
 Usage: deploy [-hm] <COMMIT-MESSAGE>
     -h, --heroku                     Deploys code to heroku
     -m, --migrate                    Migrates after deploy
+    -c, --no-commit                  Don't try to commit, just push
         --help                       Shows this help message
 ```
 
