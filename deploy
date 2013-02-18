@@ -1,29 +1,76 @@
 #!/usr/bin/env ruby
 
+require 'rubygems'
+require 'optparse'
+
 $stdout.sync = true
 
-message = ARGV.first
+class Push
+  def echo str, options = {}
+    str = "| #{ str } |"
+    dashes = str.length.times.map { '-' }.join
+    hr = "\n#{ dashes }\n"
+    message = (hr + str + hr)
+    "echo \"#{ message }\"#{ ' && \\' unless options[:end] }"
+  end
 
-def echo str, options = {}
-  str = "| #{ str } |"
-  dashes = str.length.times.map { '-' }.join
-  hr = "\n#{ dashes }\n"
-  message = (hr + str + hr)
-  "echo \"#{ message }\"#{ ' && \\' unless options[:end] }"
+  def options
+    @options ||= lambda { |options|
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: deploy [-hm] <COMMIT-MESSAGE>"
+        opts.on '-h', '--heroku', 'Deploys code to heroku' do
+          options[:heroku] = true
+        end
+        opts.on '-m', '--migrate', 'Migrates after deploy' do |msg|
+          options[:migrate] = true
+        end
+      end
+
+      parser.parse!
+
+      options[:message] = ARGV.shift
+      abort parser.banner unless options[:message]
+
+      # Return options
+      options
+    }.call({})
+  end
+
+  def message
+    push = <<-COMMAND
+      git add . && \
+      #{ echo "Committing : '#{ options[:message] }' ..." }
+      git commit -a -m "#{ options[:message] }" && \
+      #{ echo "Pushing to master ..."}
+      git push origin master &&
+    COMMAND
+
+    if options[:heroku]
+      push += <<-COMMAND
+        #{ echo "Deploying to Heroku master ..." }
+        git push heroku master &&
+      COMMAND
+    end
+
+    if options[:migrate]
+      push += <<-COMMAND
+        #{ echo "Running app's migrations" }
+        heroku run rake db:migrate &&
+      COMMAND
+    end
+
+    push += echo("Deployed !", end: true)
+  end
+
+  def self.run
+    # Prepare message
+    msg = self.new.message
+    # Run and synchronously log stdout
+    IO.popen(msg) do |f|
+      puts f.gets until f.eof?
+    end
+  end
 end
 
-deploy = <<-BASH
-  git add . && \
-  #{ echo "Committing : '#{ message }' ..." }
-  git commit -a -m "#{ message }" && \
-  #{ echo "Pushing to master ..."}
-  git push && \
-  #{ echo "Deploying to Heroku master ..." }
-  git push heroku master && \
-  #{ echo "Deployed !", end: true }
-BASH
-
-IO.popen(deploy) do |f|
-  puts f.gets until f.eof?
-end
+Push.run
 
