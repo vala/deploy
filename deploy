@@ -10,6 +10,8 @@ class Push
     heroku: false,
     migrate: false,
     commit: true,
+    pull: false,
+    update: false,
     message: nil
   }
 
@@ -18,12 +20,12 @@ class Push
     dashes = str.length.times.map { '-' }.join
     hr = "\n#{ dashes }\n"
     message = (hr + str + hr)
-    "echo \"#{ message }\"#{ ' && \\' unless options[:end] }"
+    "echo \"#{ message }\""
   end
 
   def options
     @options ||= lambda { |options|
-      parser = OptionParser.new do |opts|
+      @parser = OptionParser.new do |opts|
         opts.banner = "Usage: deploy [-hm] <COMMIT-MESSAGE>"
         opts.on '-h', '--heroku', 'Deploys code to heroku' do
           options[:heroku] = true
@@ -34,15 +36,20 @@ class Push
         opts.on '-c', '--no-commit', 'Don\'t try to commit, just push' do
           options[:commit] = false
         end
+        opts.on '-p', '--pull', 'Pull origin master before push. Exists if conflict exist' do
+          options[:pull] = true
+        end
+        opts.on '--update', 'Updates the deploy script from remote git repo' do
+          options[:update] = true
+        end
         opts.on '--help', "Shows this help message" do
           abort parser.help
         end
       end
 
-      parser.parse!
+      @parser.parse!
 
       options[:message] = ARGV.shift
-      abort parser.help if options[:commit] && !options[:message]
 
       # Return options
       options
@@ -50,47 +57,79 @@ class Push
   end
 
   def message
+    abort @parser.help if options[:commit] && !options[:message]
+
     push = ""
 
     if options[:commit]
       push += <<-COMMAND
         git add . && \
-        #{ echo "Committing : '#{ options[:message] }' ..." }
+        #{ echo "Committing : '#{ options[:message] }' ..." } && \
         git commit -a -m "#{ options[:message] }" &&
       COMMAND
     end
 
+    if options[:pull]
+      push += <<-COMMAND
+        #{ echo "Pulling master ..." } && \
+        git remote show origin | grep "local out of date" &>/dev/null; \
+        [ $? -eq 0 ] && \
+        git pull origin master; \
+        [ $? -ne 0 ] && echo "Nothing to pull" && \
+        git status | grep "working directory clean" &>/dev/null; \
+        [ $? -ne 0 ] && exit;
+      COMMAND
+    end
+
     push += <<-COMMAND
-      #{ echo "Pushing to master ..."}
+      #{ echo "Pushing to master ..."} && \
       git push origin master &&
     COMMAND
 
     if options[:heroku]
       push += <<-COMMAND
-        #{ echo "Deploying to Heroku master ..." }
+        #{ echo "Deploying to Heroku master ..." } && \
         git push heroku master &&
       COMMAND
+
+      # Migrations are only run when deployed to heroku
+      if options[:migrate]
+        push += <<-COMMAND
+          #{ echo "Running app's migrations" } && \
+          heroku run "rake db:migrate" &&
+        COMMAND
+      end
     end
 
-    if options[:migrate]
-      push += <<-COMMAND
-        #{ echo "Running app's migrations" }
-        heroku run "rake db:migrate" &&
-      COMMAND
-    end
-
-    push += echo("Deployed !", end: true)
+    push += echo("Deployed !")
   end
 
-  def self.run
-    # Prepare message
-    msg = self.new.message
-    # Run and synchronously log stdout
-    IO.popen(msg) do |f|
+  def update!
+    command = <<-COMMAND
+      #{ echo "Updating deploy ..." } && \
+      git clone git@github.com:vala/deploy /tmp/deploy && \
+      echo "\nPassword will be required to move executable to /usr/bin/deploy" && \
+      sudo mv /tmp/deploy/deploy /usr/bin/deploy && \
+      rm -rf /tmp/deploy && \
+      #{ echo "Updated !" }
+    COMMAND
+
+    IO.popen(command) do |f|
       puts f.gets until f.eof?
+    end
+  end
+
+  def run
+    if options[:update]
+      update!
+    else
+      # Run and synchronously log stdout
+      IO.popen(message) do |f|
+        puts f.gets until f.eof?
+      end
     end
   end
 end
 
-Push.run
-
+# Instantiate and run
+Push.new.run

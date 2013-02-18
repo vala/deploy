@@ -21,10 +21,12 @@ deploy -h -m "Commit message" # => Run migrations too
 # Help
 
 ```bash
-Usage: deploy [-hm] <COMMIT-MESSAGE>
+Usage: deploy [options] <COMMIT-MESSAGE>|--update
     -h, --heroku                     Deploys code to heroku
     -m, --migrate                    Migrates after deploy
     -c, --no-commit                  Don't try to commit, just push
+    -p, --pull                       Pull origin master before push. Exists if conflict exist
+        --update                     Updates the deploy script from remote git repo
         --help                       Shows this help message
 ```
 
