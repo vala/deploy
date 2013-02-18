@@ -24,12 +24,15 @@ class Push
         opts.on '-m', '--migrate', 'Migrates after deploy' do |msg|
           options[:migrate] = true
         end
+        opts.on '--help', "Shows this help message" do
+          abort parser.help
+        end
       end
 
       parser.parse!
 
       options[:message] = ARGV.shift
-      abort parser.banner unless options[:message]
+      abort parser.help unless options[:message]
 
       # Return options
       options
@@ -55,7 +58,7 @@ class Push
     if options[:migrate]
       push += <<-COMMAND
         #{ echo "Running app's migrations" }
-        heroku run rake db:migrate &&
+        heroku run "rake db:migrate" &&
       COMMAND
     end
 
