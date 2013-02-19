@@ -73,11 +73,16 @@ class Push
       push += <<-COMMAND
         #{ echo "Pulling master ..." } && \
         git remote show origin | grep "local out of date" &>/dev/null; \
-        [ $? -eq 0 ] && \
-        git pull origin master; \
-        [ $? -ne 0 ] && echo "Nothing to pull" && \
-        git status | grep "working directory clean" &>/dev/null; \
-        [ $? -ne 0 ] && exit;
+        if [ $? -ne 0 ]; then
+          echo "Nothing to pull";
+        else
+          git pull origin master
+          git status | grep "working directory clean" &>/dev/null
+          if [ $? -ne 0 ]; then
+            echo "Need to merge, exiting ..."
+            exit
+          fi
+        fi
       COMMAND
     end
 
