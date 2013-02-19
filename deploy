@@ -18,7 +18,7 @@ class Push
   def echo str, options = {}
     str = "| #{ str } |"
     dashes = str.length.times.map { '-' }.join
-    message = "#{ dashes }\n#{ str }\n#{ dashes })"
+    message = "#{ dashes }\n#{ str }\n#{ dashes }"
     "echo \"#{ message }\""
   end
 
