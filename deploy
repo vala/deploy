@@ -127,10 +127,15 @@ class Push
     if options[:update]
       update!
     else
+      # Store start time
+      start_time = Time.now
       # Run and synchronously log stdout
       IO.popen(message) do |f|
         puts f.gets until f.eof?
       end
+      # Store deploy duration
+      time = Time.now - start_time
+      puts "Time : #{ time } seconds"
     end
   end
 end
