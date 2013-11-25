@@ -7,10 +7,15 @@ $stdout.sync = true
 
 class Push
   DEFAULT_OPTIONS = {
+    app: nil,
     heroku: false,
+    branch: "master",
     migrate: false,
     commit: true,
     pull: false,
+    push: true,
+    seed: false,
+    promote: false,
     update: false,
     message: nil
   }
@@ -25,22 +30,48 @@ class Push
   def options
     @options ||= lambda { |options|
       @parser = OptionParser.new do |opts|
-        opts.banner = "Usage: deploy [-hm] <COMMIT-MESSAGE>"
-        opts.on '-h', '--heroku', 'Deploys code to heroku' do
+        opts.banner = "Usage: deploy [<options>] <COMMIT-MESSAGE>"
+
+        opts.on '-b', '--branch BRANCH', 'Choose remote origin branch to push to' do |branch|
+          options[:branch] = branch
+        end
+
+        opts.on '-a', '--app APP', 'Choose Heroku app to deploy to' do |app|
+          options[:app] = app
+        end
+
+        opts.on '-h', '--heroku', 'Deploys code to Heroku' do
           options[:heroku] = true
         end
-        opts.on '-m', '--migrate', 'Migrates after deploy' do |msg|
+
+        opts.on '-m', '--migrate', 'Migrates after deploy' do
           options[:migrate] = true
         end
+
         opts.on '-c', '--no-commit', 'Don\'t try to commit, just push' do
           options[:commit] = false
         end
-        opts.on '-p', '--pull', 'Pull origin master before push. Exists if conflict exist' do
+
+        opts.on '-n', '--no-push', 'Don\'t push, just deploy to Heroku' do
+          options[:push] = false
+        end
+
+        opts.on '-p', '--pull', 'Pull origin remote branch before push. Exists if conflict exist' do
           options[:pull] = true
         end
+
+        opts.on '-s', '--seed', 'Seed database after deploy' do
+          options[:seed] = true
+        end
+
+        opts.on '-P', '--promote', 'Promote to Heroku pipeline downstream (ex: Staging -> Master)' do
+          options[:promote] = true
+        end
+
         opts.on '--update', 'Updates the deploy script from remote git repo' do
           options[:update] = true
         end
+
         opts.on '--help', "Shows this help message" do
           abort parser.help
         end
@@ -60,7 +91,7 @@ class Push
 
     push = ""
 
-    if options[:commit]
+    if options[:push] && options[:commit]
       push += <<-COMMAND
         git add . && \
         #{ echo "Committing : '#{ options[:message] }' ..." } && \
@@ -70,12 +101,12 @@ class Push
 
     if options[:pull]
       push += <<-COMMAND
-        #{ echo "Pulling master ..." } && \
+        #{ echo "Pulling #{ options[:branch] } ..." } && \
         git remote show origin | grep "local out of date" &>/dev/null; \
         if [ $? -ne 0 ]; then
           echo "Nothing to pull";
         else
-          git pull origin master
+          git pull origin #{ options[:branch] }
           git status | grep "working directory clean" &>/dev/null
           if [ $? -ne 0 ]; then
             echo "Need to merge, exiting ..."
@@ -85,27 +116,46 @@ class Push
       COMMAND
     end
 
-    push += <<-COMMAND
-      #{ echo "Pushing to master ..."} && \
-      git push origin master &&
-    COMMAND
+    if options[:push]
+      push += <<-COMMAND
+        #{ echo "Pushing to #{ options[:branch] } ..."} && \
+        git push origin #{ options[:branch] } &&
+      COMMAND
+    end
 
     if options[:heroku]
       push += <<-COMMAND
         #{ echo "Deploying to Heroku master ..." } && \
-        git push heroku master &&
+        git push heroku #{ options[:branch] }:master#{ app_option } &&
       COMMAND
+    end
 
-      # Migrations are only run when deployed to heroku
-      if options[:migrate]
-        push += <<-COMMAND
-          #{ echo "Running app's migrations" } && \
-          heroku run "rake db:migrate" &&
-        COMMAND
-      end
+    if options[:migrate]
+      push += <<-COMMAND
+        #{ echo "Running app's migrations ..." } && \
+        heroku run "bundle exec rake db:migrate"#{ app_option } &&
+      COMMAND
+    end
+
+    if options[:seed]
+      push += <<-COMMAND
+        #{ echo "Seeding database ..." } && \
+        heroku run "bundle exec rake db:seed"#{ app_option } &&
+      COMMAND
+    end
+
+    if options[:promote]
+      push += <<-COMMAND
+        #{ echo "Promoting to downstream ..." } && \
+        heroku pipeline:promote#{ app_option } &&
+      COMMAND
     end
 
     push += echo("Deployed !")
+  end
+
+  def app_option
+    options[:app] ? " --app #{ options[:app] }" : ""
   end
 
   def update!
@@ -130,12 +180,16 @@ class Push
       # Store start time
       start_time = Time.now
       # Run and synchronously log stdout
-      IO.popen(message) do |f|
-        puts f.gets until f.eof?
-      end
+      execute(message)
       # Store deploy duration
       time = Time.now - start_time
-      puts "Time : #{ time } seconds"
+      puts "\n -> Time : #{ time } seconds"
+    end
+  end
+
+  def execute command
+    IO.popen(message) do |f|
+      puts f.gets until f.eof?
     end
   end
 end
