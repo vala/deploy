@@ -33,7 +33,7 @@ Read help below to find out what you can do with it
 
 # Help
 
-```bash
+```
 Usage: deploy [<options>] <COMMIT-MESSAGE>
     -b, --branch BRANCH              Choose remote origin branch to push to
     -a, --app APP                    Choose Heroku app to deploy to
