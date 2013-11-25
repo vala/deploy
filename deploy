@@ -71,10 +71,6 @@ class Push
         opts.on '--update', 'Updates the deploy script from remote git repo' do
           options[:update] = true
         end
-
-        opts.on '--help', "Shows this help message" do
-          abort parser.help
-        end
       end
 
       @parser.parse!
