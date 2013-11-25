@@ -41,7 +41,7 @@ Usage: deploy [<options>] <COMMIT-MESSAGE>
     -m, --migrate                    Migrates after deploy
     -c, --no-commit                  Don't try to commit, just push
     -n, --no-push                    Don't push, just deploy to Heroku
-    -p, --pull                       Pull origin remote branch before push. Exists if conflict exist
+    -p, --pull                       Pull origin remote branch before push. Exits if conflict exist
     -s, --seed                       Seed database after deploy
     -P, --promote                    Promote to Heroku pipeline downstream (ex: Staging -> Master)
         --update                     Updates the deploy script from remote git repo

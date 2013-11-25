@@ -56,7 +56,7 @@ class Push
           options[:push] = false
         end
 
-        opts.on '-p', '--pull', 'Pull origin remote branch before push. Exists if conflict exist' do
+        opts.on '-p', '--pull', 'Pull origin remote branch before push. Exits if conflict exist' do
           options[:pull] = true
         end
 
