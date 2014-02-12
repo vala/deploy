@@ -87,7 +87,7 @@ class Push
 
     push = ""
 
-    if options[:push] && options[:commit]
+    if options[:commit]
       push += <<-COMMAND
         git add . && \
         #{ echo "Committing : '#{ options[:message] }' ..." } && \
