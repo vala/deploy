@@ -140,6 +140,13 @@ class Push
       COMMAND
     end
 
+    if options[:migrate]
+      push += <<-COMMAND
+        #{ echo "Restarting app after migrations ..." } && \
+        heroku restart &&
+      COMMAND
+    end
+
     if options[:promote]
       push += <<-COMMAND
         #{ echo "Promoting to downstream ..." } && \
