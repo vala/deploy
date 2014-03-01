@@ -6,7 +6,8 @@ heroku app.
 It allows you to easily batch execute several `git` and `heroku` commands in
 a single one, using the various options provided.
 
-It's a super easy script we use everyday, we hope it can be useful to you too.
+It's kind of a dirty small bash command builder in ruby.
+We use everyday, and we hope it can be useful to you too.
 
 # Installation
 
