@@ -143,7 +143,7 @@ class Push
     if options[:migrate]
       push += <<-COMMAND
         #{ echo "Restarting app after migrations ..." } && \
-        heroku restart &&
+        heroku restart#{ app_option } &&
       COMMAND
     end
 
