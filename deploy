@@ -122,7 +122,7 @@ class Push
     if options[:heroku]
       push += <<-COMMAND
         #{ echo "Deploying to Heroku master ..." } && \
-        git push heroku #{ options[:branch] }:master#{ app_option } &&
+        git push heroku #{ options[:branch] }:master &&
       COMMAND
     end
 
