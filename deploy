@@ -17,6 +17,7 @@ class Push
     seed: false,
     promote: false,
     update: false,
+    heroku_remote: 'heroku',
     message: nil
   }
 
@@ -66,6 +67,10 @@ class Push
 
         opts.on '-P', '--promote', 'Promote to Heroku pipeline downstream (ex: Staging -> Master)' do
           options[:promote] = true
+        end
+
+        opts.on '-r', '--heroku-remote REMOTE', 'Use another remote than `heroku` to push' do |remote|
+          options[:heroku_remote] = remote
         end
 
         opts.on '--update', 'Updates the deploy script from remote git repo' do
@@ -122,7 +127,7 @@ class Push
     if options[:heroku]
       push += <<-COMMAND
         #{ echo "Deploying to Heroku master ..." } && \
-        git push heroku #{ options[:branch] }:master &&
+        git push #{ options[:heroku_remote] } #{ options[:branch] }:master &&
       COMMAND
     end
 
