@@ -18,7 +18,8 @@ class Push
     promote: false,
     update: false,
     heroku_remote: 'heroku',
-    message: nil
+    message: nil,
+    force: false
   }
 
   def echo str, options = {}
@@ -55,6 +56,10 @@ class Push
 
         opts.on '-n', '--no-push', 'Don\'t push, just deploy to Heroku' do
           options[:push] = false
+        end
+
+        opts.on '-f', '--force', 'Force push to origin repo' do
+          options[:force] = true
         end
 
         opts.on '-p', '--pull', 'Pull origin remote branch before push. Exits if conflict exist' do
@@ -120,7 +125,7 @@ class Push
     if options[:push]
       push += <<-COMMAND
         #{ echo "Pushing to #{ options[:branch] } ..."} && \
-        git push origin #{ options[:branch] } &&
+        git push origin #{ options[:branch] }#{ ' --force' if options[:force] } &&
       COMMAND
     end
 
