@@ -124,7 +124,7 @@ class Push
 
     if options[:push]
       push += <<-COMMAND
-        #{ echo "Pushing to #{ options[:branch] } ..."} && \
+        #{ echo "Pushing to #{ options[:branch] } ... #{ '(Forced)' if options[:force] } "} && \
         git push origin #{ options[:branch] }#{ ' --force' if options[:force] } &&
       COMMAND
     end
