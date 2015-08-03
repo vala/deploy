@@ -9,7 +9,7 @@ class Push
   DEFAULT_OPTIONS = {
     app: nil,
     heroku: false,
-    branch: "master",
+    branch: `git rev-parse --abbrev-ref HEAD | xargs echo -n`,
     migrate: false,
     commit: true,
     pull: false,
