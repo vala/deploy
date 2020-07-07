@@ -15,7 +15,7 @@ Dirty install style
 
 ```bash
 git clone git@github.com:vala/deploy && \
-sudo mv deploy/deploy /usr/bin/deploy && \
+sudo mv deploy/deploy /usr/local/bin/deploy && \
 rm -rf deploy
 ```
 

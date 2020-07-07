@@ -185,9 +185,10 @@ class Push
   def update!
     command = <<-COMMAND
       #{ echo "Updating deploy ..." } && \
+      rm -rf /tmp/deploy && \
       git clone git@github.com:vala/deploy /tmp/deploy && \
-      echo "\nPassword will be required to move executable to /usr/bin/deploy" && \
-      sudo mv /tmp/deploy/deploy /usr/bin/deploy && \
+      echo "\nPassword will be required to move executable to /usr/local/bin/deploy" && \
+      sudo mv /tmp/deploy/deploy /usr/local/bin/deploy && \
       rm -rf /tmp/deploy && \
       #{ echo "Updated !" }
     COMMAND
