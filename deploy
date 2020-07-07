@@ -32,7 +32,7 @@ class Push
   def options
     @options ||= lambda { |options|
       @parser = OptionParser.new do |opts|
-        opts.banner = "Usage: deploy [<options>] <COMMIT-MESSAGE>"
+        opts.banner = "Usage: deploy [<options>] [<COMMIT-MESSAGE>]"
 
         opts.on '-b', '--branch BRANCH', 'Choose remote origin branch to push to' do |branch|
           options[:branch] = branch
@@ -93,16 +93,22 @@ class Push
   end
 
   def message
-    abort @parser.help if options[:commit] && !options[:message]
-
     push = ""
 
     if options[:commit]
-      push += <<-COMMAND
-        git add . && \
-        #{ echo "Committing : '#{ options[:message] }' ..." } && \
-        git commit -a -m "#{ options[:message] }" &&
-      COMMAND
+      push += "git add . && "
+
+      push += if options[:message]
+        <<-COMMAND
+          #{ echo "Committing : '#{ options[:message] }' ..." } && \
+          git commit -a -m "#{ options[:message] }" &&
+        COMMAND
+      else
+        <<-COMMAND
+          #{ echo "Committing ..." } && \
+          git commit -a &&
+        COMMAND
+      end
     end
 
     if options[:pull]
